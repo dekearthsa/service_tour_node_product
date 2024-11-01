@@ -2,9 +2,9 @@ const { request: Req } = require('express')
 const { response: Res } = require('express')
 const { Datastore } = require("@google-cloud/datastore");
 const { Storage } = require('@google-cloud/storage');
-const path = require("path");
 const  typeActivites = require("../interface/activites");
 const imageStruct = require("../interface/activites");
+const path = require("path");
 require('dotenv').config({ path: path.resolve(__dirname, "../.env") });
 
 const storage = new Storage(
@@ -19,7 +19,8 @@ const datastore = new Datastore();
 const BUCKET_NAME = "padtravel"; // Ensure this is your bucket name
 const bucket = storage.bucket(BUCKET_NAME);
 
-const controllerCreateProduct = async (req: typeof Req, res: typeof Res) => {
+const controllerUpdateProduct = async (req: typeof Req, res: typeof Res) => {
+    
     const {
         title,
         region,
@@ -30,15 +31,15 @@ const controllerCreateProduct = async (req: typeof Req, res: typeof Res) => {
         pricePerPerson,
         activites
     } = req.body
+
     const files = req.files;
+
     
     try{
-
         const jsonActivites = JSON.parse(activites);
         const publicUrls:typeof imageStruct = [];
         const activitesData = [];
 
-        // Iterate over each file and upload to GCS
         for (const file of files) {
             
             const blob = bucket.file(file.originalname);
@@ -91,29 +92,29 @@ const controllerCreateProduct = async (req: typeof Req, res: typeof Res) => {
             }
             activitesData.push(payload)
         }
-        
-        const taskKey = datastore.key([KIND])
+
+        const query = datastore.createQuery(KIND).filter('title', '=', title);
+        const [entities] = await datastore.runQuery(query);
+        const keys = entities.map((entity:any) => entity[datastore.KEY]);
+        const taskKey = datastore.key(keys[0])
         const task = {
             key: taskKey,
             data:{
-                title: title,
-                region: region,
-                province: province,
-                ord: ord,
-                rate: rate,
-                intro: intro,
-                pricePerPerson: pricePerPerson,
-                activites: JSON.stringify(activites),
+                title: title?title:entities[0].title,
+                region: region?region:entities[0].region,
+                province: province?province:entities[0].province,
+                ord: ord?ord:entities[0].ord,
+                rate: rate?rate:entities[0].rate,
+                intro: intro?intro:entities[0].intro,
+                pricePerPerson: pricePerPerson?pricePerPerson:entities[0].pricePerPerson,
+                activites: activites?JSON.stringify(activitesData):entities[0].pricePerPerson,
             }
         }
-
-        await datastore.save(task)
-        res.status(200).send("Create new product success.");
+        await datastore.update(task);
     }catch(err){
-        console.log(`controllerCreateProduct: ${err}`)
-        res.status(500).send(err);
+        console.log(`error in controllerUpdateProduct ${err}`)
+        res.status(500).send(err)
     }
-
 }
 
-export {controllerCreateProduct}
+export {controllerUpdateProduct}

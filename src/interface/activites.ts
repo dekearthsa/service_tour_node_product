@@ -10,3 +10,7 @@ export interface imageStruct {
     name: string
 }
 
+
+export interface typePayload {
+    
+}
