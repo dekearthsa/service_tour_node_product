@@ -15,6 +15,8 @@ const { response: Res } = require('express');
 const { Datastore } = require("@google-cloud/datastore");
 const { Storage } = require('@google-cloud/storage');
 const path = require("path");
+const typeActivites = require("../interface/activites");
+const imageStruct = require("../interface/activites");
 require('dotenv').config({ path: path.resolve(__dirname, "../.env") });
 const storage = new Storage({
     projectId: "sfsdf",
@@ -26,13 +28,11 @@ const BUCKET_NAME = "padtravel"; // Ensure this is your bucket name
 const bucket = storage.bucket(BUCKET_NAME);
 const controllerCreateProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { title, region, province, ord, rate, intro, pricePerPerson, activites } = req.body;
-    const fileName = [];
     const files = req.files;
     try {
-        // console.log(files)
-        // console.log(activites)
         const jsonActivites = JSON.parse(activites);
         const publicUrls = [];
+        const activitesData = [];
         // Iterate over each file and upload to GCS
         for (const file of files) {
             const blob = bucket.file(file.originalname);
@@ -55,7 +55,7 @@ const controllerCreateProduct = (req, res) => __awaiter(void 0, void 0, void 0, 
                     blob.makePublic().then(() => {
                         // Construct the public URL
                         const publicUrl = `https://storage.googleapis.com/${BUCKET_NAME}/${encodeURIComponent(blob.name)}`;
-                        publicUrls.push(publicUrl);
+                        publicUrls.push({ url: publicUrl, name: file.originalname });
                         resolve();
                     }).catch((err) => {
                         console.error('Make Public Error:', err);
@@ -66,13 +66,20 @@ const controllerCreateProduct = (req, res) => __awaiter(void 0, void 0, void 0, 
             });
         }
         for (let i = 0; i < jsonActivites.length; i++) {
+            let imageUrl = [];
             const arrayName = jsonActivites[i]['imageName'];
-            arrayName.forEach((name) => {
+            publicUrls.forEach((el) => {
+                if (arrayName.includes(el.name)) {
+                    imageUrl.push(el.url);
+                }
             });
+            const payload = {
+                day: jsonActivites[i]['day'],
+                content: jsonActivites[i]['content'],
+                image: imageUrl
+            };
+            activitesData.push(payload);
         }
-        files.forEach((image) => {
-            fileName.push(image.originalname);
-        });
         const taskKey = datastore.key([KIND]);
         const task = {
             key: taskKey,
@@ -91,6 +98,7 @@ const controllerCreateProduct = (req, res) => __awaiter(void 0, void 0, void 0, 
         res.status(200).send("Create new product success.");
     }
     catch (err) {
+        console.log(`controllerCreateProduct: ${err}`);
         res.status(500).send(err);
     }
 });
