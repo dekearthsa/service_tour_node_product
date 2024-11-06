@@ -11,6 +11,6 @@ export interface imageStruct {
 }
 
 
-export interface typePayload {
+// export interface typePayload {
     
-}
+// }

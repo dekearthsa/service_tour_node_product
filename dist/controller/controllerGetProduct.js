@@ -10,6 +10,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.controllerGetProduct = void 0;
-const controllerGetProduct = () => __awaiter(void 0, void 0, void 0, function* () {
+const { request: Req } = require('express');
+const { response: Res } = require('express');
+const controllerGetProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
 });
 exports.controllerGetProduct = controllerGetProduct;

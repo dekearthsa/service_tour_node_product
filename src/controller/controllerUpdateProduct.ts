@@ -5,26 +5,25 @@ const { Storage } = require('@google-cloud/storage');
 const  typeActivites = require("../interface/activites");
 const imageStruct = require("../interface/activites");
 const path = require("path");
-require('dotenv').config({ path: path.resolve(__dirname, "../.env") });
+require('dotenv').config({ path: path.resolve(__dirname, "../../.env") });
 
 const storage = new Storage(
     {
         projectId: "confident-topic-404213",
-        keyFilename: path.join(__dirname, "../../key.json"),
+        // keyFilename: path.join(__dirname, "../../key.json"),
     }
 )
 
-const KIND = "product"
+const KIND = "product_page"
 const datastore = new Datastore();
 const BUCKET_NAME = "padtravel"; // Ensure this is your bucket name
+const urlCloudStorage = "https://storage.googleapis.com/padtravel"
 const bucket = storage.bucket(BUCKET_NAME);
 
 const controllerUpdateProduct = async (req: typeof Req, res: typeof Res) => {
     
     const {
         title,
-        region,
-        province,
         ord,
         rate,
         intro,
@@ -32,85 +31,102 @@ const controllerUpdateProduct = async (req: typeof Req, res: typeof Res) => {
         activites
     } = req.body
 
+    // console.log(title)
+    // console.log(activites)
     const files = req.files;
 
-    
+    const date = new Date();
+    const padZero = (num: number): string => num.toString().padStart(2, '0');
+
+    const day = padZero(date.getDate());
+    const month = padZero(date.getMonth() + 1); // Months are zero-based
+    const year = padZero(date.getFullYear() % 100); // Get last two digits of the year
+    const hours = padZero(date.getHours());
+    const minutes = padZero(date.getMinutes());
+    const seconds = padZero(date.getSeconds());
+
     try{
         const jsonActivites = JSON.parse(activites);
         const publicUrls:typeof imageStruct = [];
+        const imagesUrls: string[] = []; 
         const activitesData = [];
 
+        let countingFile = 0
         for (const file of files) {
-            
-            const blob = bucket.file(file.originalname);
-            const blobStream = blob.createWriteStream({
-                resumable: false,
-                contentType: file.mimetype,
-                // Optionally set metadata, e.g., cache control
-                metadata: {
-                    cacheControl: 'public',
+            const createImgName = `${title}_${day}_${month}_${year}_${hours}_${minutes}_${seconds}_${countingFile}.png`
+            const instanceFile = bucket.file(createImgName)
+            await instanceFile.save(file.buffer, {
+                metadata:{
+                    contentType: file.mimetype,
                 },
-            });
-
-            // Handle errors during upload
-            await new Promise((resolve:any, reject:any) => {
-                blobStream.on('error', (err:any) => {
-                    console.error('Blob Stream Error:', err);
-                    reject(err);
-                });
-
-                blobStream.on('finish', () => {
-                    // Make the file public
-                    blob.makePublic().then(() => {
-                        // Construct the public URL
-                        const publicUrl = `https://storage.googleapis.com/${BUCKET_NAME}/${encodeURIComponent(blob.name)}`;
-                        publicUrls.push({url:publicUrl,name:file.originalname});
-                        resolve();
-                    }).catch((err:any) => {
-                        console.error('Make Public Error:', err);
-                        reject(err);
-                    });
-                });
-
-                blobStream.end(file.buffer);
-            });
+                public: true, 
+            })
+            const payload = {
+                url: `${urlCloudStorage}/${createImgName}`,
+                name: file.originalname
+            }
+            publicUrls.push(payload)
+            imagesUrls.push(`${urlCloudStorage}/${createImgName}`)
+            countingFile += 1
         }
 
         for(let i = 0; i < jsonActivites.length; i++){
             let imageUrl:string[] = []
-            const arrayName =  jsonActivites[i]['imageName']
-            publicUrls.forEach((el:typeof imageStruct) => {
-                if(arrayName.includes(el.name)){
-                    imageUrl.push(el.url)
-                }
-            })
-            const payload: typeof typeActivites = {
-                day:jsonActivites[i]['day'],
-                content: jsonActivites[i]['content'],
-                image: imageUrl
+            if(jsonActivites[i]['imageName']){
+                const arrayName =  jsonActivites[i]['imageName']
+                publicUrls.forEach((el:typeof imageStruct) => {
+                    if(arrayName.includes(el.name)){
+                        imageUrl.push(el.url)
+                    }
+                })
+                const payload: typeof typeActivites = {
+                    day:jsonActivites[i]['day'],
+                    content: jsonActivites[i]['content'],
+                    image: imageUrl
 
+                }
+                activitesData.push(payload)
             }
-            activitesData.push(payload)
+            
         }
 
         const query = datastore.createQuery(KIND).filter('title', '=', title);
         const [entities] = await datastore.runQuery(query);
-        const keys = entities.map((entity:any) => entity[datastore.KEY]);
-        const taskKey = datastore.key(keys[0])
+        const idSet = entities[0][datastore.KEY]['id']
+        const id = parseInt(idSet)
+        const taskKey = datastore.key([KIND,id])
         const task = {
             key: taskKey,
             data:{
+                images: JSON.stringify(imagesUrls),
                 title: title?title:entities[0].title,
-                region: region?region:entities[0].region,
-                province: province?province:entities[0].province,
-                ord: ord?ord:entities[0].ord,
-                rate: rate?rate:entities[0].rate,
+                region: entities[0].region,
+                province: entities[0].province,
+                ord: ord?new Int16Array(ord):new Int16Array(entities[0].ord),
+                rate: rate?new Int16Array(rate):new Int16Array(entities[0].rate),
                 intro: intro?intro:entities[0].intro,
                 pricePerPerson: pricePerPerson?pricePerPerson:entities[0].pricePerPerson,
-                activites: activites?JSON.stringify(activitesData):entities[0].pricePerPerson,
+                content: activites?JSON.stringify(activitesData):entities[0].activites,
             }
         }
+
+        // const task = {
+        //     // key: taskKey,
+        //     data:{
+        //         images: JSON.stringify(imagesUrls),
+        //         title: title,
+        //         // region: region,
+        //         // province: province,
+        //         ord: ord,
+        //         rate: rate,
+        //         intro: intro,
+        //         pricePerPerson: pricePerPerson,
+        //         content: JSON.stringify(activitesData),
+        //     }
+        // }
+        // console.log(task)
         await datastore.update(task);
+        res.status(200).send("ok")
     }catch(err){
         console.log(`error in controllerUpdateProduct ${err}`)
         res.status(500).send(err)

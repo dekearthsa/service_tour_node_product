@@ -17,53 +17,49 @@ const { Storage } = require('@google-cloud/storage');
 const path = require("path");
 const typeActivites = require("../interface/activites");
 const imageStruct = require("../interface/activites");
-require('dotenv').config({ path: path.resolve(__dirname, "../.env") });
+require('dotenv').config({ path: path.resolve(__dirname, "../../.env") });
 const storage = new Storage({
     projectId: "confident-topic-404213",
-    keyFilename: path.join(__dirname, "../../key.json"),
+    // keyFilename: path.join(__dirname, "../../key.json"),
 });
 const KIND = "product";
 const datastore = new Datastore();
-const BUCKET_NAME = "padtravel"; // Ensure this is your bucket name
-const bucket = storage.bucket(BUCKET_NAME);
+const bucket = storage.bucket("padtravel");
+const urlCloudStorage = "https://storage.googleapis.com/padtravel";
 const controllerCreateProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { title, region, province, ord, rate, intro, pricePerPerson, activites } = req.body;
     const files = req.files;
+    const date = new Date();
+    const padZero = (num) => num.toString().padStart(2, '0');
+    const day = padZero(date.getDate());
+    const month = padZero(date.getMonth() + 1); // Months are zero-based
+    const year = padZero(date.getFullYear() % 100); // Get last two digits of the year
+    const hours = padZero(date.getHours());
+    const minutes = padZero(date.getMinutes());
+    const seconds = padZero(date.getSeconds());
     try {
         const jsonActivites = JSON.parse(activites);
         const publicUrls = [];
+        const imagesUrls = [];
         const activitesData = [];
         // Iterate over each file and upload to GCS
+        let countingFile = 0;
         for (const file of files) {
-            const blob = bucket.file(file.originalname);
-            const blobStream = blob.createWriteStream({
-                resumable: false,
-                contentType: file.mimetype,
-                // Optionally set metadata, e.g., cache control
+            const createImgName = `${title}_${day}_${month}_${year}_${hours}_${minutes}_${seconds}_${countingFile}.png`;
+            const instanceFile = bucket.file(createImgName);
+            yield instanceFile.save(file.buffer, {
                 metadata: {
-                    cacheControl: 'public',
+                    contentType: file.mimetype,
                 },
+                public: true,
             });
-            // Handle errors during upload
-            yield new Promise((resolve, reject) => {
-                blobStream.on('error', (err) => {
-                    console.error('Blob Stream Error:', err);
-                    reject(err);
-                });
-                blobStream.on('finish', () => {
-                    // Make the file public
-                    blob.makePublic().then(() => {
-                        // Construct the public URL
-                        const publicUrl = `https://storage.googleapis.com/${BUCKET_NAME}/${encodeURIComponent(blob.name)}`;
-                        publicUrls.push({ url: publicUrl, name: file.originalname });
-                        resolve();
-                    }).catch((err) => {
-                        console.error('Make Public Error:', err);
-                        reject(err);
-                    });
-                });
-                blobStream.end(file.buffer);
-            });
+            const payload = {
+                url: `${urlCloudStorage}/${createImgName}`,
+                name: file.originalname
+            };
+            publicUrls.push(payload);
+            imagesUrls.push(`${urlCloudStorage}/${createImgName}`);
+            countingFile += 1;
         }
         for (let i = 0; i < jsonActivites.length; i++) {
             let imageUrl = [];
@@ -84,17 +80,19 @@ const controllerCreateProduct = (req, res) => __awaiter(void 0, void 0, void 0, 
         const task = {
             key: taskKey,
             data: {
+                images: JSON.stringify(imagesUrls),
                 title: title,
                 region: region,
                 province: province,
-                ord: ord,
-                rate: rate,
+                ord: new Int16Array(ord),
+                rate: new Int16Array(rate),
                 intro: intro,
                 pricePerPerson: pricePerPerson,
-                activites: JSON.stringify(activites),
+                content: JSON.stringify(activitesData),
             }
         };
-        yield datastore.save(task);
+        console.log(task);
+        // await datastore.save(task)
         res.status(200).send("Create new product success.");
     }
     catch (err) {

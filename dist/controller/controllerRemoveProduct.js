@@ -20,8 +20,10 @@ const controllerRemoveProduct = (req, res) => __awaiter(void 0, void 0, void 0, 
     try {
         const query = datastore.createQuery(KIND).filter('title', '=', title);
         const [entities] = yield datastore.runQuery(query);
-        const keys = entities.map((entity) => entity[datastore.KEY]);
-        yield datastore.delete(keys);
+        const idSet = entities[0][datastore.KEY]['id'];
+        const id = parseInt(idSet);
+        const taskKey = datastore.key([KIND, id]);
+        yield datastore.delete(taskKey);
         res.status(200).send(`delete product ${title} success.`);
     }
     catch (err) {

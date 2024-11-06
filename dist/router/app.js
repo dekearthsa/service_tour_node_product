@@ -19,5 +19,5 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 app.get("/api/debug", controllerDebug);
 app.post("/api/create/product", upload.array("images"), controllerCreateProduct);
-app.post("/api/remove/product", controllerUpdateProduct);
-app.post("/api/update/product", controllerRemoveProduct);
+app.post("/api/remove/product", controllerRemoveProduct);
+app.post("/api/update/product", upload.array("images"), controllerUpdateProduct);

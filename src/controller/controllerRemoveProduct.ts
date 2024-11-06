@@ -12,8 +12,10 @@ const controllerRemoveProduct = async (req: typeof Req, res: typeof Res) => {
     try{
         const query = datastore.createQuery(KIND).filter('title', '=', title);
         const [entities] = await datastore.runQuery(query);
-        const keys = entities.map((entity:any) => entity[datastore.KEY]);
-        await datastore.delete(keys);
+        const idSet = entities[0][datastore.KEY]['id']
+        const id = parseInt(idSet)
+        const taskKey = datastore.key([KIND,id])
+        await datastore.delete(taskKey);
         res.status(200).send(`delete product ${title} success.`)
     }catch(err){
         console.log(`error at controllerRemoveProduct ${err}`)
