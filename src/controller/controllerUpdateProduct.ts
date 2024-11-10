@@ -9,8 +9,7 @@ require('dotenv').config({ path: path.resolve(__dirname, "../../.env") });
 
 const storage = new Storage(
     {
-        projectId: "confident-topic-404213",
-        // keyFilename: path.join(__dirname, "../../key.json"),
+        projectId: "confident-topic-404213"
     }
 )
 
@@ -23,6 +22,7 @@ const bucket = storage.bucket(BUCKET_NAME);
 const controllerUpdateProduct = async (req: typeof Req, res: typeof Res) => {
     
     const {
+        // images,
         title,
         ord,
         rate,
@@ -31,8 +31,6 @@ const controllerUpdateProduct = async (req: typeof Req, res: typeof Res) => {
         activites
     } = req.body
 
-    // console.log(title)
-    // console.log(activites)
     const files = req.files;
 
     const date = new Date();
@@ -45,11 +43,11 @@ const controllerUpdateProduct = async (req: typeof Req, res: typeof Res) => {
     const minutes = padZero(date.getMinutes());
     const seconds = padZero(date.getSeconds());
 
-    try{
+    // try{
         const jsonActivites = JSON.parse(activites);
         const publicUrls:typeof imageStruct = [];
-        const imagesUrls: string[] = []; 
         const activitesData = [];
+        let arrayImagesUrl = [];
 
         let countingFile = 0
         for (const file of files) {
@@ -66,7 +64,6 @@ const controllerUpdateProduct = async (req: typeof Req, res: typeof Res) => {
                 name: file.originalname
             }
             publicUrls.push(payload)
-            imagesUrls.push(`${urlCloudStorage}/${createImgName}`)
             countingFile += 1
         }
 
@@ -86,51 +83,52 @@ const controllerUpdateProduct = async (req: typeof Req, res: typeof Res) => {
 
                 }
                 activitesData.push(payload)
+            }else{
+                activitesData.push(jsonActivites[i])
             }
-            
         }
+
 
         const query = datastore.createQuery(KIND).filter('title', '=', title);
         const [entities] = await datastore.runQuery(query);
         const idSet = entities[0][datastore.KEY]['id']
         const id = parseInt(idSet)
+
+        for(let i = 0; i < activitesData.length; i++ ){
+            arrayImagesUrl.push(activitesData[i].image)
+        }
+
+        // console.log("id ==> ",id)
+        // console.log("entities => ", entities)
+        
+        // console.log("entities[0].region => ", entities[0].region)
+        // console.log("entities[0].province => ", entities[0].province)
+        // console.log("intro => ", intro)
+        // console.log("pricePerPerson => ", pricePerPerson)
+        // console.log("arrayImagesUrl => ", arrayImagesUrl)
+        // console.log("activitesData => ", activitesData)
+
         const taskKey = datastore.key([KIND,id])
         const task = {
             key: taskKey,
             data:{
-                images: JSON.stringify(imagesUrls),
+                images: JSON.stringify(arrayImagesUrl),
                 title: title?title:entities[0].title,
                 region: entities[0].region,
                 province: entities[0].province,
-                ord: ord?new Int16Array(ord):new Int16Array(entities[0].ord),
-                rate: rate?new Int16Array(rate):new Int16Array(entities[0].rate),
+                ord: ord?Number(ord):Number(entities[0].ord),
+                rate: rate?Number(rate):Number(entities[0].rate),
                 intro: intro?intro:entities[0].intro,
                 pricePerPerson: pricePerPerson?pricePerPerson:entities[0].pricePerPerson,
-                content: activites?JSON.stringify(activitesData):entities[0].activites,
+                content: activites?JSON.stringify(activitesData):entities[0].content,
             }
         }
-
-        // const task = {
-        //     // key: taskKey,
-        //     data:{
-        //         images: JSON.stringify(imagesUrls),
-        //         title: title,
-        //         // region: region,
-        //         // province: province,
-        //         ord: ord,
-        //         rate: rate,
-        //         intro: intro,
-        //         pricePerPerson: pricePerPerson,
-        //         content: JSON.stringify(activitesData),
-        //     }
-        // }
-        // console.log(task)
         await datastore.update(task);
         res.status(200).send("ok")
-    }catch(err){
-        console.log(`error in controllerUpdateProduct ${err}`)
-        res.status(500).send(err)
-    }
+    // }catch(err){
+    //     console.log(`error in controllerUpdateProduct ${err}`)
+    //     res.status(500).send(err)
+    // }
 }
 
 export {controllerUpdateProduct}

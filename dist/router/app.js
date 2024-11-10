@@ -8,6 +8,8 @@ const { controllerDebug } = require("../controller/controllerDebug");
 const { controllerCreateProduct } = require("../controller/controllerCreateProduct");
 const { controllerUpdateProduct } = require("../controller/controllerUpdateProduct");
 const { controllerRemoveProduct } = require("../controller/controllerRemoveProduct");
+const { controllerGetProduct } = require("../controller/controllerGetProduct");
+const { controllerUpdateProductWithOutFile } = require("../controller/controllerUpdateProductWithOutFile");
 // const {controllerGetImgProductSendMutiImg} = require("../controller/controllerGetImgProductSendMutiImg")
 // const {controllerGetImgProductSendMutiChunks} = require("../controller/controllerGetImgProductSendMutiChunks")
 const app = express();
@@ -18,6 +20,8 @@ app.use(cors({ origin: '*' }));
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 app.get("/api/debug", controllerDebug);
+app.get("/api/get/product", controllerGetProduct);
 app.post("/api/create/product", upload.array("images"), controllerCreateProduct);
 app.post("/api/remove/product", controllerRemoveProduct);
 app.post("/api/update/product", upload.array("images"), controllerUpdateProduct);
+app.post("/api/update/noimg/product", controllerUpdateProductWithOutFile);

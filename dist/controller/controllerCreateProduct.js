@@ -20,9 +20,8 @@ const imageStruct = require("../interface/activites");
 require('dotenv').config({ path: path.resolve(__dirname, "../../.env") });
 const storage = new Storage({
     projectId: "confident-topic-404213",
-    // keyFilename: path.join(__dirname, "../../key.json"),
 });
-const KIND = "product";
+const KIND = "product_page";
 const datastore = new Datastore();
 const bucket = storage.bucket("padtravel");
 const urlCloudStorage = "https://storage.googleapis.com/padtravel";
@@ -84,15 +83,15 @@ const controllerCreateProduct = (req, res) => __awaiter(void 0, void 0, void 0, 
                 title: title,
                 region: region,
                 province: province,
-                ord: new Int16Array(ord),
-                rate: new Int16Array(rate),
+                ord: Number(ord),
+                rate: Number(rate),
                 intro: intro,
                 pricePerPerson: pricePerPerson,
                 content: JSON.stringify(activitesData),
             }
         };
-        console.log(task);
-        // await datastore.save(task)
+        // console.log(task)
+        yield datastore.save(task);
         res.status(200).send("Create new product success.");
     }
     catch (err) {

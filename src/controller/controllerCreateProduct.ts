@@ -10,11 +10,10 @@ require('dotenv').config({ path: path.resolve(__dirname, "../../.env") });
 const storage = new Storage(
     {
         projectId: "confident-topic-404213",
-        // keyFilename: path.join(__dirname, "../../key.json"),
     }
 )
 
-const KIND = "product"
+const KIND = "product_page"
 const datastore = new Datastore();
 const bucket = storage.bucket("padtravel");
 const urlCloudStorage = "https://storage.googleapis.com/padtravel"
@@ -95,15 +94,15 @@ const controllerCreateProduct = async (req: typeof Req, res: typeof Res) => {
                 title: title,
                 region: region,
                 province: province,
-                ord: new Int16Array(ord),
-                rate: new Int16Array(rate),
+                ord: Number(ord),
+                rate: Number(rate),
                 intro: intro,
                 pricePerPerson: pricePerPerson,
                 content: JSON.stringify(activitesData),
             }
         }
-        console.log(task)
-        // await datastore.save(task)
+        // console.log(task)
+        await datastore.save(task)
         res.status(200).send("Create new product success.");
     }catch(err){
         console.log(`controllerCreateProduct: ${err}`)

@@ -12,6 +12,19 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.controllerGetProduct = void 0;
 const { request: Req } = require('express');
 const { response: Res } = require('express');
+const { Datastore } = require("@google-cloud/datastore");
+const path = require("path");
+require('dotenv').config({ path: path.resolve(__dirname, "../../.env") });
+const KIND = "product_page";
+const datastore = new Datastore();
 const controllerGetProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const query = datastore.createQuery(KIND);
+        const [tasks] = yield datastore.runQuery(query);
+        res.status(200).send(tasks);
+    }
+    catch (err) {
+        res.status(500).send(err);
+    }
 });
 exports.controllerGetProduct = controllerGetProduct;

@@ -2,7 +2,7 @@ const { request: Req } = require('express')
 const { response: Res } = require('express')
 const { Datastore } = require("@google-cloud/datastore");
 
-const KIND = "product"
+const KIND = "product_page"
 const datastore = new Datastore();
 
 
