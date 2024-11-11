@@ -29,7 +29,7 @@ const bucket = storage.bucket(BUCKET_NAME);
 const controllerUpdateProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { 
     // images,
-    title, ord, rate, intro, pricePerPerson, activites } = req.body;
+    static_id, title, ord, rate, intro, pricePerPerson, activites, province, region } = req.body;
     const files = req.files;
     const date = new Date();
     const padZero = (num) => num.toString().padStart(2, '0');
@@ -81,29 +81,22 @@ const controllerUpdateProduct = (req, res) => __awaiter(void 0, void 0, void 0, 
             activitesData.push(jsonActivites[i]);
         }
     }
-    const query = datastore.createQuery(KIND).filter('title', '=', title);
+    const query = datastore.createQuery(KIND).filter('static_id', '=', static_id);
     const [entities] = yield datastore.runQuery(query);
     const idSet = entities[0][datastore.KEY]['id'];
     const id = parseInt(idSet);
     for (let i = 0; i < activitesData.length; i++) {
         arrayImagesUrl.push(activitesData[i].image);
     }
-    // console.log("id ==> ",id)
-    // console.log("entities => ", entities)
-    // console.log("entities[0].region => ", entities[0].region)
-    // console.log("entities[0].province => ", entities[0].province)
-    // console.log("intro => ", intro)
-    // console.log("pricePerPerson => ", pricePerPerson)
-    // console.log("arrayImagesUrl => ", arrayImagesUrl)
-    // console.log("activitesData => ", activitesData)
     const taskKey = datastore.key([KIND, id]);
     const task = {
         key: taskKey,
         data: {
+            static_id: static_id,
             images: JSON.stringify(arrayImagesUrl),
             title: title ? title : entities[0].title,
-            region: entities[0].region,
-            province: entities[0].province,
+            region: region ? region : entities[0].region,
+            province: province ? province : entities[0].province,
             ord: ord ? Number(ord) : Number(entities[0].ord),
             rate: rate ? Number(rate) : Number(entities[0].rate),
             intro: intro ? intro : entities[0].intro,

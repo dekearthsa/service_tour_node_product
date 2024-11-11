@@ -23,12 +23,15 @@ const controllerUpdateProduct = async (req: typeof Req, res: typeof Res) => {
     
     const {
         // images,
+        static_id,
         title,
         ord,
         rate,
         intro,
         pricePerPerson,
-        activites
+        activites,
+        province,
+        region
     } = req.body
 
     const files = req.files;
@@ -89,7 +92,7 @@ const controllerUpdateProduct = async (req: typeof Req, res: typeof Res) => {
         }
 
 
-        const query = datastore.createQuery(KIND).filter('title', '=', title);
+        const query = datastore.createQuery(KIND).filter('static_id', '=', static_id);
         const [entities] = await datastore.runQuery(query);
         const idSet = entities[0][datastore.KEY]['id']
         const id = parseInt(idSet)
@@ -98,24 +101,15 @@ const controllerUpdateProduct = async (req: typeof Req, res: typeof Res) => {
             arrayImagesUrl.push(activitesData[i].image)
         }
 
-        // console.log("id ==> ",id)
-        // console.log("entities => ", entities)
-        
-        // console.log("entities[0].region => ", entities[0].region)
-        // console.log("entities[0].province => ", entities[0].province)
-        // console.log("intro => ", intro)
-        // console.log("pricePerPerson => ", pricePerPerson)
-        // console.log("arrayImagesUrl => ", arrayImagesUrl)
-        // console.log("activitesData => ", activitesData)
-
         const taskKey = datastore.key([KIND,id])
         const task = {
             key: taskKey,
             data:{
+                static_id:static_id,
                 images: JSON.stringify(arrayImagesUrl),
                 title: title?title:entities[0].title,
-                region: entities[0].region,
-                province: entities[0].province,
+                region: region?region:entities[0].region,
+                province: province?province:entities[0].province,
                 ord: ord?Number(ord):Number(entities[0].ord),
                 rate: rate?Number(rate):Number(entities[0].rate),
                 intro: intro?intro:entities[0].intro,

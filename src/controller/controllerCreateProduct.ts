@@ -40,7 +40,6 @@ const controllerCreateProduct = async (req: typeof Req, res: typeof Res) => {
     const hours = padZero(date.getHours());
     const minutes = padZero(date.getMinutes());
     const seconds = padZero(date.getSeconds());
-    
 
     try{
 
@@ -90,6 +89,7 @@ const controllerCreateProduct = async (req: typeof Req, res: typeof Res) => {
         const task = {
             key: taskKey,
             data:{
+                static_id: `${title}${day}${month}${year}${hours}${minutes}${seconds}`,
                 images: JSON.stringify(imagesUrls),
                 title: title,
                 region: region,

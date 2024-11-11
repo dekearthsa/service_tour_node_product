@@ -79,6 +79,7 @@ const controllerCreateProduct = (req, res) => __awaiter(void 0, void 0, void 0, 
         const task = {
             key: taskKey,
             data: {
+                static_id: `${title}${day}${month}${year}${hours}${minutes}${seconds}`,
                 images: JSON.stringify(imagesUrls),
                 title: title,
                 region: region,

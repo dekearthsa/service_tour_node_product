@@ -20,11 +20,11 @@ const datastore = new Datastore();
 const controllerUpdateProductWithOutFile = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { 
     // images,
-    title, ord, rate, intro, pricePerPerson,
+    static_id, title, ord, rate, intro, pricePerPerson, region, province
     // activites,
      } = req.body;
     try {
-        const query = datastore.createQuery(KIND).filter('title', '=', title);
+        const query = datastore.createQuery(KIND).filter('static_id', '=', static_id);
         const [entities] = yield datastore.runQuery(query);
         const idSet = entities[0][datastore.KEY]['id'];
         const id = parseInt(idSet);
@@ -32,10 +32,11 @@ const controllerUpdateProductWithOutFile = (req, res) => __awaiter(void 0, void 
         const task = {
             key: taskKey,
             data: {
+                static_id: static_id,
                 images: entities[0].images,
-                title: entities[0].title,
-                region: entities[0].region,
-                province: entities[0].province,
+                title: title ? title : entities[0].title,
+                region: region ? region : entities[0].region,
+                province: province ? province : entities[0].province,
                 ord: ord ? Number(ord) : Number(entities[0].ord),
                 rate: rate ? Number(rate) : Number(entities[0].rate),
                 intro: intro ? intro : entities[0].intro,
