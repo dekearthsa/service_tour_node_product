@@ -26,7 +26,7 @@ const datastore = new Datastore();
 const bucket = storage.bucket("padtravel");
 const urlCloudStorage = "https://storage.googleapis.com/padtravel";
 const controllerCreateProduct = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    const { title, region, province, ord, rate, intro, pricePerPerson, activites } = req.body;
+    const { isUniID, title, region, province, ord, rate, intro, pricePerPerson, activites } = req.body;
     const files = req.files;
     const date = new Date();
     const padZero = (num) => num.toString().padStart(2, '0');
@@ -41,6 +41,7 @@ const controllerCreateProduct = (req, res) => __awaiter(void 0, void 0, void 0, 
         const publicUrls = [];
         const imagesUrls = [];
         const activitesData = [];
+        const createTextFileName = `text_${day}_${month}_${year}_${hours}_${minutes}_${seconds}.txt`;
         // Iterate over each file and upload to GCS
         let countingFile = 0;
         for (const file of files) {
@@ -75,11 +76,17 @@ const controllerCreateProduct = (req, res) => __awaiter(void 0, void 0, void 0, 
             };
             activitesData.push(payload);
         }
+        const textFile = bucket.file(createTextFileName);
+        yield textFile.save(JSON.stringify(activitesData), {
+            metadata: {
+                contentType: 'text/plain',
+            },
+        });
         const taskKey = datastore.key([KIND]);
         const task = {
             key: taskKey,
             data: {
-                static_id: `${title}${day}${month}${year}${hours}${minutes}${seconds}`,
+                static_id: `${isUniID}${day}${month}${year}${hours}${minutes}${seconds}`,
                 images: JSON.stringify(imagesUrls),
                 title: title,
                 region: region,
@@ -88,7 +95,7 @@ const controllerCreateProduct = (req, res) => __awaiter(void 0, void 0, void 0, 
                 rate: Number(rate),
                 intro: intro,
                 pricePerPerson: pricePerPerson,
-                content: JSON.stringify(activitesData),
+                content: createTextFileName,
             }
         };
         // console.log(task)

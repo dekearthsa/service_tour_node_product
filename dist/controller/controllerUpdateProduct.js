@@ -39,76 +39,84 @@ const controllerUpdateProduct = (req, res) => __awaiter(void 0, void 0, void 0, 
     const hours = padZero(date.getHours());
     const minutes = padZero(date.getMinutes());
     const seconds = padZero(date.getSeconds());
-    // try{
-    const jsonActivites = JSON.parse(activites);
-    const publicUrls = [];
-    const activitesData = [];
-    let arrayImagesUrl = [];
-    let countingFile = 0;
-    for (const file of files) {
-        const createImgName = `${title}_${day}_${month}_${year}_${hours}_${minutes}_${seconds}_${countingFile}.png`;
-        const instanceFile = bucket.file(createImgName);
-        yield instanceFile.save(file.buffer, {
-            metadata: {
-                contentType: file.mimetype,
-            },
-            public: true,
-        });
-        const payload = {
-            url: `${urlCloudStorage}/${createImgName}`,
-            name: file.originalname
-        };
-        publicUrls.push(payload);
-        countingFile += 1;
-    }
-    for (let i = 0; i < jsonActivites.length; i++) {
-        let imageUrl = [];
-        if (jsonActivites[i]['imageName']) {
-            const arrayName = jsonActivites[i]['imageName'];
-            publicUrls.forEach((el) => {
-                if (arrayName.includes(el.name)) {
-                    imageUrl.push(el.url);
-                }
+    try {
+        const jsonActivites = JSON.parse(activites);
+        const publicUrls = [];
+        const activitesData = [];
+        let arrayImagesUrl = [];
+        const createTextFileName = `text_${day}_${month}_${year}_${hours}_${minutes}_${seconds}.txt`;
+        let countingFile = 0;
+        for (const file of files) {
+            const createImgName = `${title}_${day}_${month}_${year}_${hours}_${minutes}_${seconds}_${countingFile}.png`;
+            const instanceFile = bucket.file(createImgName);
+            yield instanceFile.save(file.buffer, {
+                metadata: {
+                    contentType: file.mimetype,
+                },
+                public: true,
             });
             const payload = {
-                day: jsonActivites[i]['day'],
-                content: jsonActivites[i]['content'],
-                image: imageUrl
+                url: `${urlCloudStorage}/${createImgName}`,
+                name: file.originalname
             };
-            activitesData.push(payload);
+            publicUrls.push(payload);
+            countingFile += 1;
         }
-        else {
-            activitesData.push(jsonActivites[i]);
+        for (let i = 0; i < jsonActivites.length; i++) {
+            let imageUrl = [];
+            if (jsonActivites[i]['imageName']) {
+                const arrayName = jsonActivites[i]['imageName'];
+                publicUrls.forEach((el) => {
+                    if (arrayName.includes(el.name)) {
+                        imageUrl.push(el.url);
+                    }
+                });
+                const payload = {
+                    day: jsonActivites[i]['day'],
+                    content: jsonActivites[i]['content'],
+                    image: imageUrl
+                };
+                activitesData.push(payload);
+            }
+            else {
+                activitesData.push(jsonActivites[i]);
+            }
         }
+        const textFile = bucket.file(createTextFileName);
+        yield textFile.save(JSON.stringify(activitesData), {
+            metadata: {
+                contentType: 'text/plain',
+            },
+        });
+        const query = datastore.createQuery(KIND).filter('static_id', '=', static_id);
+        const [entities] = yield datastore.runQuery(query);
+        const idSet = entities[0][datastore.KEY]['id'];
+        const id = parseInt(idSet);
+        for (let i = 0; i < activitesData.length; i++) {
+            arrayImagesUrl.push(activitesData[i].image);
+        }
+        const taskKey = datastore.key([KIND, id]);
+        const task = {
+            key: taskKey,
+            data: {
+                static_id: static_id,
+                images: JSON.stringify(arrayImagesUrl),
+                title: title ? title : entities[0].title,
+                region: region ? region : entities[0].region,
+                province: province ? province : entities[0].province,
+                ord: ord ? Number(ord) : Number(entities[0].ord),
+                rate: rate ? Number(rate) : Number(entities[0].rate),
+                intro: intro ? intro : entities[0].intro,
+                pricePerPerson: pricePerPerson ? pricePerPerson : entities[0].pricePerPerson,
+                content: activites ? createTextFileName : entities[0].content,
+            }
+        };
+        yield datastore.update(task);
+        res.status(200).send("ok");
     }
-    const query = datastore.createQuery(KIND).filter('static_id', '=', static_id);
-    const [entities] = yield datastore.runQuery(query);
-    const idSet = entities[0][datastore.KEY]['id'];
-    const id = parseInt(idSet);
-    for (let i = 0; i < activitesData.length; i++) {
-        arrayImagesUrl.push(activitesData[i].image);
+    catch (err) {
+        console.log(`error in controllerUpdateProduct ${err}`);
+        res.status(500).send(err);
     }
-    const taskKey = datastore.key([KIND, id]);
-    const task = {
-        key: taskKey,
-        data: {
-            static_id: static_id,
-            images: JSON.stringify(arrayImagesUrl),
-            title: title ? title : entities[0].title,
-            region: region ? region : entities[0].region,
-            province: province ? province : entities[0].province,
-            ord: ord ? Number(ord) : Number(entities[0].ord),
-            rate: rate ? Number(rate) : Number(entities[0].rate),
-            intro: intro ? intro : entities[0].intro,
-            pricePerPerson: pricePerPerson ? pricePerPerson : entities[0].pricePerPerson,
-            content: activites ? JSON.stringify(activitesData) : entities[0].content,
-        }
-    };
-    yield datastore.update(task);
-    res.status(200).send("ok");
-    // }catch(err){
-    //     console.log(`error in controllerUpdateProduct ${err}`)
-    //     res.status(500).send(err)
-    // }
 });
 exports.controllerUpdateProduct = controllerUpdateProduct;

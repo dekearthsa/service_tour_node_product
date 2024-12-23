@@ -39,7 +39,7 @@ const controllerUpdateProductWithOutFile = async (req: typeof Req, res: typeof R
                 rate: rate?Number(rate):Number(entities[0].rate),
                 intro: intro?intro:entities[0].intro,
                 pricePerPerson: pricePerPerson?pricePerPerson:entities[0].pricePerPerson,
-                content: entities[0].content,
+                content:entities[0].content,
             }
         }
 

@@ -46,11 +46,13 @@ const controllerUpdateProduct = async (req: typeof Req, res: typeof Res) => {
     const minutes = padZero(date.getMinutes());
     const seconds = padZero(date.getSeconds());
 
-    // try{
+    try{
         const jsonActivites = JSON.parse(activites);
         const publicUrls:typeof imageStruct = [];
         const activitesData = [];
         let arrayImagesUrl = [];
+        const createTextFileName = `text_${day}_${month}_${year}_${hours}_${minutes}_${seconds}.txt`
+
 
         let countingFile = 0
         for (const file of files) {
@@ -91,6 +93,13 @@ const controllerUpdateProduct = async (req: typeof Req, res: typeof Res) => {
             }
         }
 
+        const textFile = bucket.file(createTextFileName)
+        await textFile.save(JSON.stringify(activitesData), {
+            metadata: {
+                contentType: 'text/plain', 
+            },
+        })
+
 
         const query = datastore.createQuery(KIND).filter('static_id', '=', static_id);
         const [entities] = await datastore.runQuery(query);
@@ -114,15 +123,15 @@ const controllerUpdateProduct = async (req: typeof Req, res: typeof Res) => {
                 rate: rate?Number(rate):Number(entities[0].rate),
                 intro: intro?intro:entities[0].intro,
                 pricePerPerson: pricePerPerson?pricePerPerson:entities[0].pricePerPerson,
-                content: activites?JSON.stringify(activitesData):entities[0].content,
+                content: activites?createTextFileName:entities[0].content,
             }
         }
         await datastore.update(task);
         res.status(200).send("ok")
-    // }catch(err){
-    //     console.log(`error in controllerUpdateProduct ${err}`)
-    //     res.status(500).send(err)
-    // }
+    }catch(err){
+        console.log(`error in controllerUpdateProduct ${err}`)
+        res.status(500).send(err)
+    }
 }
 
 export {controllerUpdateProduct}

@@ -20,6 +20,7 @@ const urlCloudStorage = "https://storage.googleapis.com/padtravel"
 
 const controllerCreateProduct = async (req: typeof Req, res: typeof Res) => {
     const {
+        isUniID,
         title,
         region,
         province,
@@ -47,6 +48,7 @@ const controllerCreateProduct = async (req: typeof Req, res: typeof Res) => {
         const publicUrls:typeof imageStruct = [];
         const imagesUrls: string[] = []; 
         const activitesData = [];
+        const createTextFileName = `text_${day}_${month}_${year}_${hours}_${minutes}_${seconds}.txt`
 
         // Iterate over each file and upload to GCS
         let countingFile = 0
@@ -84,12 +86,19 @@ const controllerCreateProduct = async (req: typeof Req, res: typeof Res) => {
             }
             activitesData.push(payload)
         }
+
+        const textFile = bucket.file(createTextFileName)
+        await textFile.save(JSON.stringify(activitesData), {
+            metadata: {
+                contentType: 'text/plain', 
+            },
+        })
         
         const taskKey = datastore.key([KIND])
         const task = {
             key: taskKey,
             data:{
-                static_id: `${title}${day}${month}${year}${hours}${minutes}${seconds}`,
+                static_id: `${isUniID}${day}${month}${year}${hours}${minutes}${seconds}`,
                 images: JSON.stringify(imagesUrls),
                 title: title,
                 region: region,
@@ -98,7 +107,7 @@ const controllerCreateProduct = async (req: typeof Req, res: typeof Res) => {
                 rate: Number(rate),
                 intro: intro,
                 pricePerPerson: pricePerPerson,
-                content: JSON.stringify(activitesData),
+                content: createTextFileName,
             }
         }
         // console.log(task)
